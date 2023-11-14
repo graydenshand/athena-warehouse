@@ -1,0 +1,9 @@
+.git
+__pycache__
+.DS_Store
+__pypackages__
+cdk.out
+cdk.context.json
+.pdm.toml
+.pdm-python
+.venv

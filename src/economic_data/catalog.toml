@@ -1,0 +1,11 @@
+[GDPC1]
+name = "real_gdp"
+comment = "Real Gross Domestic Product. Billions of Chained 2017 Dollars, Seasonally Adjusted Annual Rate. Quarterly."
+
+[MORTGAGE30US]
+name = "mortgage_rate_30yr"
+comment = "30-Year Fixed Rate Mortgage Average in the United States. Percent, Not Seasonally Adjusted. Weekly."
+
+[UNRATE]
+name = "unemployment_rate"
+comment = "Unemployment Rate. Percent, Seasonally Adjusted. Monthly."
