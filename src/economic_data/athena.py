@@ -65,6 +65,6 @@ def create_raw_table(series_id: str):
     FIELDS TERMINATED BY ','
     ESCAPED BY '\\'
     LINES TERMINATED BY '\n'
-    LOCATION '{config.raw_data_path}/{series_id}/'
+    LOCATION '{config.raw_data_path}/{name}/'
     TBLPROPERTIES("skip.header.line.count"="1");"""
     execute_sql(sql)

@@ -7,13 +7,16 @@ from aws_cdk import aws_lambda
 from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_secretsmanager as secretsmanager
 from economic_data import config
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as events_targets
+from economic_data.athena import load_catalog
 
 
 class EconomicDataWarehouseStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
 
-        bucket = s3.Bucket(self, "Bucket", removal_policy=cdk.RemovalPolicy.DESTROY)
+        bucket = s3.Bucket(self, "Bucket", removal_policy=cdk.RemovalPolicy.DESTROY, versioned=True)
         bucket.add_lifecycle_rule(
             expiration=cdk.Duration.days(1), prefix="athena_results/"
         )
@@ -80,6 +83,25 @@ class EconomicDataWarehouseStack(cdk.Stack):
             comment="Fetch latest FRED data for specified series.",
             definition_body=sfn.DefinitionBody.from_chainable(state_machine_definition),
             removal_policy=cdk.RemovalPolicy.DESTROY,
+        )
+
+        rule = events.Rule(
+            self,
+            "WeeklyFredTrigger",
+            schedule=events.Schedule.rate(cdk.Duration.days(7)),
+            description="An event that fires weekly to trigger FRED data ingestion."
+        )
+
+        rule.add_target(
+            events_targets.SfnStateMachine(
+                state_machine,
+                input=events.RuleTargetInput.from_object(
+                    {"series": [
+                        {"series_id": s} 
+                        for s in load_catalog()
+                    ]}
+                ),
+            )
         )
 
         cdk.CfnOutput(self, "BucketName", value=bucket.bucket_name)
