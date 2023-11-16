@@ -9,43 +9,33 @@ from aws_cdk import aws_secretsmanager as secretsmanager
 from economic_data import config
 from aws_cdk import aws_events as events
 from aws_cdk import aws_events_targets as events_targets
-from economic_data.athena import load_catalog
 
 
-class EconomicDataWarehouseStack(cdk.Stack):
+
+class FredDataStateMachine(cdk.NestedStack):
+
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
-
-        bucket = s3.Bucket(self, "Bucket", removal_policy=cdk.RemovalPolicy.DESTROY, versioned=True)
-        bucket.add_lifecycle_rule(
-            expiration=cdk.Duration.days(1), prefix="athena_results/"
-        )
-
         secret = secretsmanager.Secret(
             self, "FredAPISecret", description="API key for FRED api."
         )
-
-        image = ecr_assets.DockerImageAsset(
-            self, "DockerImage", platform=ecr_assets.Platform.LINUX_AMD64, directory="."
-        )
-
         fetch_fred_data_fn = aws_lambda.DockerImageFunction(
             self,
             "FetchFredDataFunction",
             code=aws_lambda.DockerImageCode.from_ecr(
-                repository=image.repository,
-                tag_or_digest=image.image_tag,
+                repository=scope.image.repository,
+                tag_or_digest=scope.image.image_tag,
                 cmd=["economic_data.lambda_handlers.fetch_series_handler"],
             ),
             environment={
                 "FRED_API_KEY_SECRET_ARN": secret.secret_full_arn,
-                "S3_BUCKET_NAME": bucket.bucket_name,
+                "S3_BUCKET_NAME": scope.bucket.bucket_name,
                 "LOG_LEVEL": "INFO",
             },
             timeout=cdk.Duration.seconds(60),
         )
         secret.grant_read(fetch_fred_data_fn.role)
-        bucket.grant_read_write(fetch_fred_data_fn)
+        scope.bucket.grant_read_write(fetch_fred_data_fn)
 
         sfn_fetch_data_map = sfn.Map(
             self,
@@ -59,7 +49,7 @@ class EconomicDataWarehouseStack(cdk.Stack):
 
         sfn_fetch_data_map.iterator(fetch_fred_data_task)
 
-        send_update_raw_data_event = sfn_tasks.EventBridgePutEvents(
+        self.send_update_raw_data_event = sfn_tasks.EventBridgePutEvents(
             self,
             "SendUpdatedFredRawDataEvent",
             entries=[
@@ -75,7 +65,7 @@ class EconomicDataWarehouseStack(cdk.Stack):
             ],
         )
 
-        state_machine_definition = sfn_fetch_data_map.next(send_update_raw_data_event)
+        state_machine_definition = sfn_fetch_data_map.next(self.send_update_raw_data_event)
 
         state_machine = sfn.StateMachine(
             self,
@@ -98,19 +88,54 @@ class EconomicDataWarehouseStack(cdk.Stack):
                 input=events.RuleTargetInput.from_object(
                     {"series": [
                         {"series_id": s} 
-                        for s in load_catalog()
+                        for s in config.catalog
                     ]}
                 ),
             )
         )
 
-        cdk.CfnOutput(self, "BucketName", value=bucket.bucket_name)
-        cdk.CfnOutput(self, "FredApiKeySecretArn", value=secret.secret_full_arn)
-        cdk.CfnOutput(self, "ImageUri", value=image.image_uri)
         cdk.CfnOutput(self, "StateMachineArn", value=state_machine.state_machine_arn)
         cdk.CfnOutput(
             self, "FetchDataFunctionName", value=fetch_fred_data_fn.function_name
         )
+        cdk.CfnOutput(self, "FredApiKeySecretArn", value=secret.secret_full_arn)
+        
+
+
+class EconomicDataWarehouseStack(cdk.Stack):
+    def __init__(self, scope: Construct, id: str):
+        super().__init__(scope, id)
+
+        self.bucket = s3.Bucket(self, "Bucket", removal_policy=cdk.RemovalPolicy.DESTROY, versioned=True)
+        self.bucket.add_lifecycle_rule(
+            expiration=cdk.Duration.days(1), prefix="athena_results/"
+        )
+
+        self.image = ecr_assets.DockerImageAsset(
+            self, "DockerImage", platform=ecr_assets.Platform.LINUX_AMD64, directory="."
+        )
+
+        self.fred_data_state_machine = FredDataStateMachine(self, "FredDataStateMachine")
+
+        self.join_tables_fn = aws_lambda.DockerImageFunction(
+            self,
+            "JoinFredTablesFunction",
+            code=aws_lambda.DockerImageCode.from_ecr(
+                repository=scope.image.repository,
+                tag_or_digest=scope.image.image_tag,
+                cmd=["economic_data.lambda_handlers.join_tables_handler"],
+            ),
+            environment={
+                "S3_BUCKET_NAME": scope.bucket.bucket_name,
+                "LOG_LEVEL": "INFO",
+            },
+            timeout=cdk.Duration.seconds(60),
+        )
+
+
+        cdk.CfnOutput(self, "BucketName", value=self.bucket.bucket_name)
+        cdk.CfnOutput(self, "ImageUri", value=self.image.image_uri)
+
 
 
 if __name__ == "__main__":

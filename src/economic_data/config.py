@@ -1,10 +1,13 @@
 """Global values."""
 import pydantic
+from importlib.resources import files
+import tomllib
 
 s3_base_path: str
 raw_data_path: str
 warehouse_path: str
 athena_results_path: str
+catalog: str
 raw_db_name = "fred_raw"
 warehouse_db_name = "warehouse"
 
@@ -39,3 +42,6 @@ def initialize(config: Config | None = None, **kwargs):
         config = Config(**kwargs)
     for k, v in config.model_dump().items():
         globals()[k] = v
+
+    with files("economic_data").joinpath("catalog.toml").open("rb") as f:
+        globals()["catalog"] = tomllib.load(f)

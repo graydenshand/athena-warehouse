@@ -22,3 +22,10 @@ curl https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key
 }
 ```
 
+
+**Roadmap**
+
+- [x] Lambda function to fetch FRED series
+- [x] Step function to fetch several series in parallel
+- [x] Eventbridge trigger to execute step function once per week
+- [ ] Step function to execute Athena Query after 

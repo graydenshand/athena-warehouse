@@ -26,23 +26,32 @@ def execute_sql(
     return result
 
 
-def build_joined_table(event, context):
-    drop_table = "DROP TABLE economic_data;"
-    create_table = f"""\
-    CREATE TABLE economic_data 
-    WITH ( table_type = 'ICEBERG', location = '{config.warehouse_path}/', is_external = false )
+def build_joined_table():
+    drop_table = f"DROP TABLE IF EXISTS {config.warehouse_db_name}.economic_data;"
+
+    select = ["d.day"] + [
+        f"{config.raw_db_name}.{series['name']}.value as {series['name']}"
+        for series in config.catalog.values()
+    ]
+    join_stmts = [
+        f"LEFT JOIN {config.raw_db_name}.{series['name']} ON d.day = {config.raw_db_name}.{series['name']}.day"
+        for series in config.catalog.values()
+    ]
+    conditions = [
+        f"{config.raw_db_name}.{series['name']}.value IS NOT NULL"
+        for series in config.catalog.values()
+    ]
+    create_table = f"""
+    CREATE TABLE {config.warehouse_db_name}.economic_data 
+    WITH ( table_type = 'ICEBERG', location = '{config.warehouse_path}/economic_data', is_external = false )
     AS (
-        SELECT coalesce(ur.day, m30.day) day, ur.value unemployment_rate, gdp.value real_gdp, m30.value mortgage_30yr
-        FROM raw.unemployment_rate ur
-        FULL OUTER JOIN raw.mortgage_30yr m30 ON m30.day = ur.day
-        FULL OUTER JOIN raw.real_gdp gdp ON ur.day = gdp.day
+        SELECT {','.join(select)}
+        FROM {config.warehouse_db_name}.days d
+        {"\n".join(join_stmts)}
+        WHERE {"\nOR ".join(conditions)}
+        ORDER BY DAY
     );"""
     execute_sql([drop_table, create_table])
-
-
-def load_catalog() -> dict[str, dict[str, str]]:
-    with files("economic_data").joinpath("catalog.toml").open("rb") as f:
-        return tomllib.load(f)
 
 
 def create_database(db_name: str):
@@ -51,8 +60,7 @@ def create_database(db_name: str):
 
 def create_raw_table(series_id: str):
     """Create a table in the fred raw database to store data for a single series."""
-    catalog = load_catalog()
-    series = catalog[series_id]
+    series = config.catalog[series_id]
     name = series["name"]
     comment = series["comment"]
     sql = rf"""
@@ -68,3 +76,26 @@ def create_raw_table(series_id: str):
     LOCATION '{config.raw_data_path}/{name}/'
     TBLPROPERTIES("skip.header.line.count"="1");"""
     execute_sql(sql)
+
+
+def create_days_table():
+    """Create a table with dates from 1900-2100 for simpler join logic."""
+    create_table_sql = f"""\
+    CREATE TABLE IF NOT EXISTS {config.warehouse_db_name}.days (
+        day DATE
+    )
+    COMMENT 'Dates for simpler joins'
+    LOCATION '{config.warehouse_path}/days/'
+    TBLPROPERTIES ( 'table_type' = 'ICEBERG');
+    """
+    insert_sql = f"""
+    INSERT INTO {config.warehouse_db_name}.days (
+        SELECT day 
+        FROM (
+        SELECT
+            sequence(date %(start)s, date %(end)s, interval '1' day) days
+        ) d
+        CROSS JOIN UNNEST(days) as t(day)
+    )
+    """
+    execute_sql([create_table_sql, insert_sql, insert_sql], [None, dict(start="1900-01-01", end="1999-12-31"), dict(start="2000-01-01", end="2099-12-31")])

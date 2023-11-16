@@ -4,7 +4,6 @@ from economic_data import config
 from economic_data import athena
 import boto3
 import logging
-
 logger = logging.getLogger(__name__)
 
 secretsmanager = boto3.client("secretsmanager")
@@ -39,3 +38,8 @@ def fetch_series_handler(event, context):
 
     write_csv(path, ["day", "value"], data)
     logger.info("Complete")
+
+def join_tables_handler(event, countext):
+    """Join FRED raw data tables."""
+    logger.info(f"Event: {event}")
+    athena.build_joined_table()

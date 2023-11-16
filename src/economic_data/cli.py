@@ -27,8 +27,7 @@ def bootstrap_database():
     logger.info("Create data warehouse")
     athena.create_database(config.warehouse_db_name)
 
-    catalog = athena.load_catalog()
-    for series_id in catalog:
+    for series_id in config.catalog:
         logger.info(f"Create table for series {series_id}")
         athena.create_raw_table(series_id)
 

@@ -1,10 +1,10 @@
-from economic_data.athena import load_catalog, execute_sql
-
-
-def test_load_catalog():
-    catalog = load_catalog()
-    assert "GDPC1" in catalog.keys()
-
+from economic_data import athena
 
 def test_execute_sql():
-    assert execute_sql("SELECT 1;") == [(1,)]
+    assert athena.execute_sql("SELECT 1;") == [(1,)]
+
+def test_create_days_table():
+    athena.create_days_table()
+
+def test_build_joined_table():
+    athena.build_joined_table()
