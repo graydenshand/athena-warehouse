@@ -1,8 +1,10 @@
-from importlib.resources import files
 import tomllib
-from economic_data import config
-import pyathena
+from importlib.resources import files
 from typing import Any
+
+import pyathena
+
+from economic_data import config
 
 RAW_DB_NAME = "fred_raw"
 WAREHOUSE_NAME = "warehouse"
@@ -98,4 +100,11 @@ def create_days_table():
         CROSS JOIN UNNEST(days) as t(day)
     )
     """
-    execute_sql([create_table_sql, insert_sql, insert_sql], [None, dict(start="1900-01-01", end="1999-12-31"), dict(start="2000-01-01", end="2099-12-31")])
+    execute_sql(
+        [create_table_sql, insert_sql, insert_sql],
+        [
+            None,
+            dict(start="1900-01-01", end="1999-12-31"),
+            dict(start="2000-01-01", end="2099-12-31"),
+        ],
+    )

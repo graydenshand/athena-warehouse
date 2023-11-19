@@ -1,9 +1,13 @@
-import click
-from economic_data import config, athena
-import os
 import logging
+import os
+
+import boto3
+import click
+
+from economic_data import athena, config
 
 logger = logging.getLogger(__name__)
+events = boto3.client("events")
 
 
 @click.group
@@ -30,6 +34,19 @@ def bootstrap_database():
     for series_id in config.catalog:
         logger.info(f"Create table for series {series_id}")
         athena.create_raw_table(series_id)
+
+
+@cli.command()
+def trigger_fetch_data():
+    """Emit an event bridge event to trigger the fetch FRED data state machine."""
+    events.put_events(
+        Entries=[
+            dict(
+                Source="EconomicDataCLI",
+                DetailType=config.trigger_fetch_fred_raw_data_detail_type,
+            )
+        ]
+    )
 
 
 if __name__ == "__main__":

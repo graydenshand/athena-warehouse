@@ -9,3 +9,51 @@ comment = "30-Year Fixed Rate Mortgage Average in the United States. Percent, No
 [UNRATE]
 name = "unemployment_rate"
 comment = "Unemployment Rate. Percent, Seasonally Adjusted. Monthly."
+
+[CORESTICKM159SFRBATL]
+name = "sticky_price_index"
+comment = "Sticky Price Consumer Price Index less Food and Energy. Percent Change from Year Ago, Seasonally Adjusted. Monthly"
+
+[T10Y2Y]
+name = "treasury_rate_10yr_2yr_spread"
+comment = "10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity. Percent, Not Seasonally Adjusted. Daily."
+
+[SP500]
+name = "sp_500"
+comment = "S&P 500 stock market index. Not Seasonally Adjusted. Daily."
+
+[DJIA]
+name = "dow_jones_avg"
+comment = "Dow Jones Industrial Average. Not Seasonally Adjusted. Daily."
+
+[CNP16OV]
+name = "population_level"
+comment = "Population Level. Thousands of Persons, Not Seasonally Adjusted. Monthly."
+
+[JHDUSRGDPBR]
+name = "recessions"
+comment = "Dates of U.S. recessions as inferred by GDP-based recession indicator. +1 or 0, Not Seasonally Adjusted. Quarterly."
+
+[EMISSCO2TOTVTTTOUSA]
+name = "carbon"
+comment = "Total Carbon Dioxide Emissions From All Sectors, All Fuels for United States. Million Metric Tons CO2, Not Seasonally Adjusted.  Annual."
+
+[GFDEGDQ188S]
+name = "debt_gdp_pct"
+comment = "Federal Debt: Total Public Debt as Percent of Gross Domestic Product"
+
+[FYFSD]
+name = "federal_surplus_or_deficit"
+comment = "Federal Surplus or Deficit"
+
+[A229RX0]
+name = "real_disposable_income_per_capita"
+comment = "Real Disposable Personal Income: Per Capita. Chained 2017 Dollars, Seasonally Adjusted Annual Rate. Monthly"
+
+[A071RC1A027NBEA]
+name = "personal_saving"
+comment = "Personal savings. Billions of Dollars, Not Seasonally Adjusted. Annual."
+
+[IEAXGS]
+name = "exports"
+comment = "Exports of goods and services. Millions of Dollars, Seasonally Adjusted. Quarterly."

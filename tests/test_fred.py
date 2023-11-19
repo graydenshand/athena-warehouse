@@ -4,15 +4,17 @@ Tests will use a mocked API response if FRED_API_KEY environment variable is
 not present.
 """
 
+import json
 import os
-from economic_data.fred import fetch_series, write_csv
 from datetime import date
 from unittest.mock import MagicMock, patch
-from pytest import skip
 from uuid import uuid4
-import json
-from economic_data import config
+
 import boto3
+from pytest import skip
+
+from economic_data import config
+from economic_data.fred import fetch_series, write_csv
 
 fred_api_key = os.getenv("FRED_API_KEY")
 
@@ -24,7 +26,7 @@ sample_response = """\
 
 def test_fetch_series():
     if fred_api_key:
-        data = fetch_series("GDPC1", fred_api_key)
+        data = fetch_series("SP500", fred_api_key)
     else:
         mock_response = MagicMock()
         mock_response.json.return_value = json.loads(sample_response)

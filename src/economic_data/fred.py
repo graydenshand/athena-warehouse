@@ -1,12 +1,13 @@
-import tomllib
-import os
-from pathlib import Path
-from datetime import date
 import csv
-import boto3
-import tempfile
-from io import StringIO
+import os
 import re
+import tempfile
+import tomllib
+from datetime import date
+from io import StringIO
+from pathlib import Path
+
+import boto3
 import requests
 
 
@@ -15,7 +16,10 @@ def fetch_series(series_id: str, api_key: str) -> list[tuple[date, float]]:
     params = dict(series_id=series_id, api_key=api_key, file_type="json")
     data = requests.get(url, params=params).json()
     return [
-        (date.fromisoformat(row["date"]), float(row["value"]))
+        (
+            date.fromisoformat(row["date"]),
+            float(row["value"]) if row["value"] != "." else None,
+        )
         for row in data["observations"]
     ]
 

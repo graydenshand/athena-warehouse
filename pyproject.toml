@@ -23,15 +23,21 @@ economic-data = "economic_data.cli:cli"
 lambda = [
     "awslambdaric>=2.0.8",
 ]
-[tool.pdm.dev-dependencies]
-dev = [
-    "aws-cdk-lib>=2.106.1",
-    "pytest>=7.4.3",
-]
-
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [tool.pytest.ini_options]
 testpaths=["tests"]
+[tool.pdm.dev-dependencies]
+dev = [
+    "aws-cdk-lib>=2.106.1",
+    "pytest>=7.4.3",
+    "black>=23.11.0",
+    "isort>=5.12.0",
+]
+
+[tool.isort]
+profile = "black"
+src_paths = ["src", "tests", "cdk.py"]
+
